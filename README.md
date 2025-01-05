@@ -1,6 +1,6 @@
-# Soft-Body-Physics  
+# Soft-Body-Physics
 A customizable, interactive point mass physics engine written entirely in Python with Pygame.  
-![Soft Body Simulation Thumbnail](https://github.com/user-attachments/assets/03ab6d58-27d1-4275-a182-2cda0f94b083)
+![Soft Body Simulation Thumbnail](https://raw.githubusercontent.com/22yeets22/Soft-Body-Physics/refs/heads/main/Soft%20Body%20Simulation%20Thumbnail.png)
 
 ## Demos
 - Bridge Simulation: ![image](https://github.com/user-attachments/assets/140c60e8-93c8-41bb-8913-ae61422eca76)
