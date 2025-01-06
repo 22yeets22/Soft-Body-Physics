@@ -13,13 +13,13 @@ SUBSTEPS = 5
 
 # NODES
 # Elasticity coefficient for node collisions
-ELASTICITY = 0.6
+ELASTICITY = 0.3
 
 # Friction coefficient for nodes and surfaces
-FRICTION = 0.6
+FRICTION = 0.4
 
 # Air friction coefficient for nodes
-AIR_FRICTION = 0.04
+AIR_FRICTION = 0.02
 
 # The strength of the node dragging force from 0 to 1
 DRAG_STRENGTH = 1
@@ -37,6 +37,10 @@ SPRING_FORCE = 1
 # Default spring width (when drawing)
 SPRING_WIDTH = 3
 
+# DESTROYABLE SPRING
+# Max force a destroyable spring can handle before breaking
+SPRING_MAX_FORCE = 25
+
 
 # PRESSURIZED SOFT BODY
 SOFT_BODY_PRESSURE = 10000  # Depends on the size of the body
@@ -47,7 +51,10 @@ SOFT_BODY_PRESSURE = 10000  # Depends on the size of the body
 NODE_DRAGGING_COLOR = (224, 59, 47)
 
 # Color of a node when it is idle
-NODE_IDLE_COLOR = (30, 30, 30)
+NODE_IDLE_COLOR = (47, 224, 59)
+
+# Static node color
+NODE_STATIC_COLOR = (50, 50, 50)
 
 # Color of the spring connecting nodes
 SPRING_COLOR = (47, 127, 224)
