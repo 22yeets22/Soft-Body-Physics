@@ -1,97 +1,77 @@
+from dataclasses import dataclass
 from time import perf_counter
+from typing import List, Optional, Tuple
 
 import pygame
 
-from .constants import FPS, HEIGHT, SUBSTEPS, WIDTH
+
+@dataclass
+class SimulationConfig:
+    """Configuration settings for the physics simulation."""
+
+    width: int = 800
+    height: int = 600
+    fps: int = 60
+    substeps: int = 8
+    background_color: Tuple[int, int, int] = (255, 255, 255)
+    debug_font_size: int = 18
+    reset_key: int = pygame.K_SPACE
+    low_fps_threshold: int = 30
+    low_fps_color: Tuple[int, int, int] = (255, 0, 0)
+    normal_fps_color: Tuple[int, int, int] = (0, 0, 0)
 
 
 class Simulation:
     """
-    A class to represent a physics simulation.
-    Attributes:
-    display : pygame.Surface
-        The display surface where the simulation is drawn.
-    nodes : list, optional
-        A list of nodes in the simulation (default is None).
-    springs : list, optional
-        A list of springs in the simulation (default is None).
-    bodies : list, optional
-        A list of bodies in the simulation (default is None).
-    substeps : int, optional
-        The number of substeps for the simulation (default is SUBSTEPS).
-    fps : int, optional
-        The target frames per second (default is FPS).
-    width : int, optional
-        The width of the simulation display (default is WIDTH).
-    height : int, optional
-        The height of the simulation display (default is HEIGHT).
-    reset_key : int, optional
-        The key used to reset the simulation (default is pygame.K_SPACE).
-    reset_func : function, optional
-        The function used to reset the simulation (default is lambda: None).
-    debug : bool, optional
-        Flag to enable or disable debug mode (default is False).
-    Methods:
-    update(dt, mouse_pos, mouse_pressed):
-        Updates the simulation state.
-    draw(display=None):
-        Draws the simulation state.
-    debug_draw(display):
-        Draws debug information.
-    reset():
-        Resets the simulation state.
-    simulate(callback=lambda x: None):
-        Runs the main simulation loop.
-    stop():
-        Stops the simulation.
+    Physics simulation system with performance monitoring and debug capabilities.
     """
 
     def __init__(
         self,
         display,
-        nodes=None,
-        springs=None,
-        bodies=None,
-        substeps=SUBSTEPS,
-        fps=FPS,
-        width=WIDTH,
-        height=HEIGHT,
+        config: Optional[SimulationConfig] = None,
+        nodes: Optional[List] = None,
+        springs: Optional[List] = None,
+        bodies: Optional[List] = None,
         reset_key=pygame.K_SPACE,
-        reset_func=lambda: None,
+        reset_func=None,
         debug=False,
     ):
-        # Initialize the simulation with given parameters
         self.display = display
-        self.nodes = nodes if nodes else []
-        self.springs = springs if springs else []
-        self.bodies = bodies if bodies else []
-        self.substeps = substeps
-        self.target_fps = fps
-        self.width = width
-        self.height = height
+        self.config = config or SimulationConfig()
 
+        # CHANGE: Directly pass in components
+        self.nodes = nodes or []
+        self.springs = springs or []
+        self.bodies = bodies or []
+
+        # Performance tracking
         self.clock = pygame.time.Clock()
         self.dt = 1
         self.running = True
-
         self.debug = debug
 
+        # Reset functionality
         self.reset_key = reset_key
-        self.reset_func = reset_func
+        self.reset_func = reset_func or (lambda: None)
 
+        # Debug metrics
         self.draw_time = 0
         self.avg_draw_time = 0
         self.simulate_time = 0
         self.avg_simulate_time = 0
         self.ticks = 0
 
+        # Prepare debug font if needed
+        self.font = pygame.font.Font(None, self.config.debug_font_size) if debug else None
+
     def update(self, dt, mouse_pos, mouse_pressed):
-        # Update the simulation state
+        """Update simulation state"""
         if self.debug:
             start_time = perf_counter()
 
-        substep_dt = dt / self.substeps
-        for _ in range(self.substeps):
+        substep_dt = dt / self.config.substeps
+        for _ in range(self.config.substeps):
             for body in self.bodies:
                 body.update(substep_dt, mouse_pos, mouse_pressed)
             for spring in self.springs:
@@ -105,7 +85,7 @@ class Simulation:
             self.simulate_time = (end_time - start_time) * 1000
 
     def draw(self, display=None):
-        # Draw the simulation state
+        """Draw simulation state"""
         if self.debug:
             start = perf_counter()
 
@@ -120,17 +100,14 @@ class Simulation:
         if self.debug:
             end = perf_counter()
             self.draw_time = (end - start) * 1000
-            self.debug_draw(useable_display)
+            self._debug_draw(useable_display)
 
-    def debug_draw(self, display):
-        # Draw debug information
+    def _debug_draw(self, display):
+        """Draw debug information"""
         fps = self.clock.get_fps()
         fps_color = (255, 0, 0) if fps < 30 else (0, 0, 0)
-        fps_text = self.font.render(f"FPS: {fps:.1f}", False, fps_color)  # Render the FPS (for drawing)
-        simulation_text = self.font.render(
-            f"TPS: {self.substeps * fps / self.dt:.1f}", False, (0, 0, 0)
-        )  # For all of the nerds in the code, TPS is the amount of times the physics loop runs every second
-
+        fps_text = self.font.render(f"FPS: {fps:.1f}", False, fps_color)
+        simulation_text = self.font.render(f"TPS: {self.config.substeps * fps / self.dt:.1f}", False, (0, 0, 0))
         simulate_time_text = self.font.render(f"Sim time: {self.simulate_time:.2f} ms", True, (0, 0, 0))
         draw_time_text = self.font.render(f"Draw time: {self.draw_time:.2f} ms", True, (0, 0, 0))
 
@@ -143,7 +120,7 @@ class Simulation:
         self.avg_draw_time = (self.avg_draw_time * self.ticks + self.draw_time) / (self.ticks + 1)
 
     def reset(self):
-        # Reset the simulation state using the reset function provided by the user (if any)
+        """Reset the simulation state"""
         values = self.reset_func()
 
         if values is None:
@@ -165,9 +142,7 @@ class Simulation:
             self.bodies.extend(values[2])
 
     def simulate(self, callback=lambda x: None):
-        # Main simulation loop
-        self.font = pygame.font.Font(None, 18)
-
+        """Run the main simulation loop"""
         while self.running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -178,7 +153,7 @@ class Simulation:
                     if self.reset_key and event.key == self.reset_key:
                         self.reset()
 
-            self.display.fill((255, 255, 255))
+            self.display.fill(self.config.background_color)
 
             mouse_pos = pygame.mouse.get_pos()
             mouse_pressed = pygame.mouse.get_pressed()
@@ -189,9 +164,7 @@ class Simulation:
 
             pygame.display.flip()
 
-            self.dt = min(
-                self.clock.tick(self.target_fps) * self.target_fps / 1000, 1
-            )  # Normalize the time step (usually near 1)
+            self.dt = min(self.clock.tick(self.config.fps) * self.config.fps / 1000, 1)
 
             self.ticks += 1
 
@@ -203,5 +176,5 @@ class Simulation:
             print(f"Average draw time: {self.avg_draw_time:.2f} ms")
 
     def stop(self):
-        # Stop the simulation
+        """Stop the simulation"""
         self.running = False

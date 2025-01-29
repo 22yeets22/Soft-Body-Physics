@@ -2,14 +2,10 @@ from random import uniform
 
 import pygame
 
-from sim.constants import FPS, HEIGHT, SUBSTEPS, WIDTH
+from sim.constants import BG_COLOR, DEBUG_FONT, FPS, HEIGHT, SUBSTEPS, WIDTH
 from sim.node import Node
-from sim.sim import Simulation
-from sim.spring import DestroyableSpring
-
-pygame.init()
-display = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Earthquake Simulation Demo")
+from sim.sim import Simulation, SimulationConfig
+from sim.spring import ColorizedDestroyableSpring
 
 
 def earthquake(sim):
@@ -64,7 +60,7 @@ def build():
 
             if j > 0:
                 springs.append(
-                    DestroyableSpring(
+                    ColorizedDestroyableSpring(
                         nodes[-2],
                         node,
                         node_spacing_x,
@@ -76,7 +72,7 @@ def build():
 
             if i > 0:
                 springs.append(
-                    DestroyableSpring(
+                    ColorizedDestroyableSpring(
                         node,
                         nodes[-building_width - 1],
                         node_spacing_y,
@@ -87,7 +83,7 @@ def build():
                 )
                 if j > 0:
                     springs.append(
-                        DestroyableSpring(
+                        ColorizedDestroyableSpring(
                             node,
                             nodes[-building_width - 2],
                             diagonal_node_spacing,
@@ -98,7 +94,7 @@ def build():
                     )
                 if j < building_width - 1:
                     springs.append(
-                        DestroyableSpring(
+                        ColorizedDestroyableSpring(
                             node,
                             nodes[-building_width],
                             diagonal_node_spacing,
@@ -111,16 +107,19 @@ def build():
     return [nodes, springs]
 
 
+config = SimulationConfig(
+    width=WIDTH, height=HEIGHT, fps=FPS, substeps=SUBSTEPS, background_color=BG_COLOR, debug_font_size=DEBUG_FONT
+)
+pygame.init()
+display = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Earthquake Simulation Demo")
+
 nodes, springs = build()
 sim = Simulation(
     display,
+    config=config,
     nodes=nodes,
     springs=springs,
-    substeps=SUBSTEPS,
-    fps=FPS,
-    width=WIDTH,
-    height=HEIGHT,
-    reset_func=build,
     debug=True,
 )
 sim.simulate(earthquake)  # never stops until the user closes the window or sim.stop is called

@@ -1,13 +1,9 @@
 import pygame
 
-from sim.constants import FPS, HEIGHT, SUBSTEPS, WIDTH
+from sim.constants import BG_COLOR, DEBUG_FONT, FPS, HEIGHT, SUBSTEPS, WIDTH
 from sim.node import Node
-from sim.sim import Simulation
-from sim.spring import DestroyableSpring
-
-pygame.init()
-display = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Wobbly Rope Bridge Demo")
+from sim.sim import Simulation, SimulationConfig
+from sim.spring import ColorizedDestroyableSpring
 
 bridge_height = 60
 bridge_length = 14
@@ -26,7 +22,7 @@ def build():
         node = Node((separation * (i + 1), HEIGHT / 2 + bridge_height / 2), mass=bridge_mass)
         nodes.append(node)
         if i > 0:
-            spring = DestroyableSpring(
+            spring = ColorizedDestroyableSpring(
                 nodes[i - 1], nodes[i], separation, bridge_strength, spring_force, bridge_damping
             )
             springs.append(spring)
@@ -40,7 +36,7 @@ def build():
         node = Node((separation * (i + 1) + separation / 2, HEIGHT / 2 - bridge_height / 2), mass=bridge_mass)
         nodes2.append(node)
         if i > 0:
-            spring = DestroyableSpring(
+            spring = ColorizedDestroyableSpring(
                 nodes2[i - 1], nodes2[i], separation, bridge_strength, spring_force, bridge_damping
             )
             springs2.append(spring)
@@ -53,19 +49,28 @@ def build():
     diagonal_length = ((separation / 2) ** 2 + bridge_height**2) ** 0.5
     for i in range(bridge_length - 1):
         springs.append(
-            DestroyableSpring(nodes[i], nodes2[i], diagonal_length, bridge_strength, spring_force, bridge_damping)
+            ColorizedDestroyableSpring(
+                nodes[i], nodes2[i], diagonal_length, bridge_strength, spring_force, bridge_damping
+            )
         )
         springs.append(
-            DestroyableSpring(nodes[i + 1], nodes2[i], diagonal_length, bridge_strength, spring_force, bridge_damping)
+            ColorizedDestroyableSpring(
+                nodes[i + 1], nodes2[i], diagonal_length, bridge_strength, spring_force, bridge_damping
+            )
         )
 
     return nodes, springs
 
 
-nodes, springs = build()
-sim = Simulation(
-    display, nodes, springs, None, substeps=SUBSTEPS, fps=FPS, width=WIDTH, height=HEIGHT, reset_func=build, debug=True
+config = SimulationConfig(
+    width=WIDTH, height=HEIGHT, fps=FPS, substeps=SUBSTEPS, background_color=BG_COLOR, debug_font_size=DEBUG_FONT
 )
+pygame.init()
+display = pygame.display.set_mode((config.width, config.height))
+pygame.display.set_caption("Wobbly Rope Bridge Demo")
+
+nodes, springs = build()
+sim = Simulation(display, config=config, nodes=nodes, springs=springs, debug=True)
 sim.simulate()
 
 # clock = pygame.time.Clock()

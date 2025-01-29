@@ -1,13 +1,9 @@
 import pygame
 
-from sim.constants import FPS, HEIGHT, SUBSTEPS, WIDTH
+from sim.constants import FPS, HEIGHT, SUBSTEPS, WIDTH, BG_COLOR, DEBUG_FONT
 from sim.node import Node
-from sim.sim import Simulation
-from sim.spring import DestroyableSpring, Spring  # noqa: F401
-
-pygame.init()
-display = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Tearable Cloth Demo")
+from sim.sim import Simulation, SimulationConfig
+from sim.spring import ColorizedDestroyableSpring, DestroyableSpring, Spring  # noqa: F401
 
 # Cloth parameters (feel free to change)!!
 rows = 15
@@ -18,7 +14,7 @@ start_x = WIDTH // 2
 start_y = 20
 cloth_strength = 90  # Adjusts the max force of each spring
 cloth_stiffness = 1  # Adjusts the stiffness of each spring
-cloth_damping = 100  # Adjusts the damping of each spring
+cloth_damping = 10  # Adjusts the damping of each spring
 
 
 def build():
@@ -38,7 +34,7 @@ def build():
         for col in range(cols):
             if col < cols - 1:
                 springs.append(
-                    DestroyableSpring(
+                    ColorizedDestroyableSpring(
                         nodes[row * cols + col],
                         nodes[row * cols + col + 1],
                         node_distance_x,
@@ -49,7 +45,7 @@ def build():
                 )
             if row < rows - 1:
                 springs.append(
-                    DestroyableSpring(
+                    ColorizedDestroyableSpring(
                         nodes[row * cols + col],
                         nodes[(row + 1) * cols + col],
                         node_distance_y,
@@ -62,18 +58,15 @@ def build():
     return nodes, springs
 
 
-nodes, springs = build()
-sim = Simulation(
-    display,
-    nodes=nodes,
-    springs=springs,
-    substeps=SUBSTEPS,
-    fps=FPS,
-    width=WIDTH,
-    height=HEIGHT,
-    reset_func=build,
-    debug=True,
+config = SimulationConfig(
+    width=WIDTH, height=HEIGHT, fps=FPS, substeps=SUBSTEPS, background_color=BG_COLOR, debug_font_size=DEBUG_FONT
 )
+pygame.init()
+display = pygame.display.set_mode((config.width, config.height))
+pygame.display.set_caption("Tearable Cloth Demo")
+
+nodes, springs = build()
+sim = Simulation(display, config=config, nodes=nodes, springs=springs, debug=True)
 sim.simulate()  # never stops until the user closes the window or sim.stop is called
 
 # Alternative code below for those who want more control

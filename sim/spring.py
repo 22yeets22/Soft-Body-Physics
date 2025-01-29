@@ -3,7 +3,7 @@ from math import exp
 
 import pygame
 
-from sim.constants import SPRING_COLOR, SPRING_DAMPING, SPRING_FORCE, SPRING_MAX_FORCE, SPRING_WIDTH
+from sim.constants import COLOR_1, COLOR_2, SPRING_COLOR, SPRING_DAMPING, SPRING_FORCE, SPRING_MAX_FORCE, SPRING_WIDTH
 
 
 class Spring:
@@ -124,27 +124,72 @@ class DestroyableSpring(Spring):
         point1,
         point2,
         desired_length,
-        max_force=SPRING_MAX_FORCE,
-        force=SPRING_FORCE,
-        damping=SPRING_DAMPING,
+        max_force=None,
+        force=None,
+        damping=None,
+        color=SPRING_COLOR,
         **kwargs,
     ):
+        # Use defaults if no custom values are provided
+        max_force = max_force or SPRING_MAX_FORCE
+        force = force or SPRING_FORCE
+        damping = damping or SPRING_DAMPING
+
         super().__init__(point1, point2, desired_length, force, damping, **kwargs)
+
         self.max_force = max_force
         self.broken = False
+        self.color = color
+        self.total_force = pygame.Vector2(0, 0)
 
     def update(self, dt):
-        if self.broken or self.point1.static and self.point2.static:
+        if self.broken or (self.point1.static and self.point2.static):
             return
 
-        total_force = self._calculate_force(dt)
-        if total_force.magnitude() >= self.max_force:
+        self.total_force = self._calculate_force(dt)
+        if self.total_force.magnitude() >= self.max_force:
             self.broken = True
             return
 
-        self.point1.apply_force(-total_force, dt)
-        self.point2.apply_force(total_force, dt)
+        self.point1.apply_force(-self.total_force, dt)
+        self.point2.apply_force(self.total_force, dt)
 
     def draw(self, display):
         if not self.broken:
-            super().draw(display)
+            pygame.draw.line(display, self.color, self.point1.pos, self.point2.pos, self.width)
+
+
+class ColorizedDestroyableSpring(DestroyableSpring):
+    """
+    A class representing a colorized spring that can break if the force exceeds a maximum threshold.
+    """
+
+    def __init__(
+        self,
+        point1,
+        point2,
+        desired_length,
+        max_force=None,
+        force=None,
+        damping=None,
+        color1=None,
+        color2=None,
+        **kwargs,
+    ):
+        super().__init__(point1, point2, desired_length, max_force, force, damping, **kwargs)
+
+        # Default colors if none are provided
+        self.color1 = pygame.Color(COLOR_1) if color1 is None else pygame.Color(color1)
+        self.color2 = pygame.Color(COLOR_2) if color2 is None else pygame.Color(color2)
+
+    def draw(self, display):
+        if not self.broken:
+            t = self.total_force.magnitude() / self.max_force
+
+            color = pygame.Color(
+                int(self.color1.r + (self.color2.r - self.color1.r) * t),
+                int(self.color1.g + (self.color2.g - self.color1.g) * t),
+                int(self.color1.b + (self.color2.b - self.color1.b) * t),
+            )
+
+            pygame.draw.line(display, color, self.point1.pos, self.point2.pos, self.width)

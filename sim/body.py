@@ -2,9 +2,9 @@ from math import cos, radians, sin
 
 import pygame
 
-from sim.constants import GRAVITY, SOFT_BODY_PRESSURE, SPRING_DAMPING, SPRING_FORCE
+from sim.constants import GRAVITY, SOFT_BODY_PRESSURE, SPRING_DAMPING, SPRING_FORCE, SPRING_MAX_FORCE
 from sim.node import Node
-from sim.spring import Spring
+from sim.spring import ColorizedDestroyableSpring, Spring, DestroyableSpring
 
 
 class SoftBody:
@@ -16,8 +16,11 @@ class SoftBody:
         A list of nodes that make up the soft body.
     springs : list
         A list of springs connecting the nodes.
+    spring_type : Class
+        A class which will create the springs.
     draggable_points : bool
         A flag indicating whether the nodes are draggable by the mouse.
+
     Methods:
     --------
     __init__(nodes, edges, draggable_points=False):
@@ -34,14 +37,14 @@ class SoftBody:
         Creates and returns a copy of the soft body.
     """
 
-    def __init__(self, nodes, edges, draggable_points=False):
+    def __init__(self, nodes, edges, spring_type, draggable_points=False):
         # Pass in nodes and edges as lists
         # Edges in format (node1, node2, spring_force, desired_length, spring_force, spring_damping)
         self.nodes = nodes
         self.springs = []
         self.draggable_points = draggable_points
         for edge in edges:
-            self.springs.append(Spring(self.nodes[edge[0]], self.nodes[edge[1]], edge[2], edge[3], edge[4]))
+            self.springs.append(spring_type(self.nodes[edge[0]], self.nodes[edge[1]], edge[2], edge[3], edge[4]))
 
     def _update_springs(self, dt):
         for spring in self.springs:
@@ -87,6 +90,7 @@ class PressurizedSoftBody(SoftBody):
         spring_damping (float, optional): The damping factor for the springs. Defaults to SPRING_DAMPING.
         gravity (pygame.Vector2, optional): The gravity vector affecting the nodes. Defaults to GRAVITY.
         draggable_points (bool, optional): Whether the nodes are draggable. Defaults to False.
+        colorized (bool, optional): Whether the springs are colorized. Defaults to True.
     """
 
     def __init__(
@@ -113,7 +117,7 @@ class PressurizedSoftBody(SoftBody):
             for i in range(sides)
         ]
         edges = [(i, (i + 1) % sides, spring_force, desired_length, spring_damping) for i in range(sides)]
-        super().__init__(nodes, edges, draggable_points)
+        super().__init__(nodes, edges, Spring, draggable_points)
         self.pressure = pressure_force
         self.center_of_mass = pos
 
@@ -161,3 +165,67 @@ class PressurizedSoftBody(SoftBody):
         self._update_pressure(dt)
         self._update_springs(dt)
         self._update_nodes(dt, mouse_pos, mouse_pressed)
+
+
+class DestroyablePressurizedSoftBody(PressurizedSoftBody):
+    """
+    A class representing a pressurized soft body with destructible springs.
+    Attributes:
+        destroyed (bool): Whether the soft body has been destroyed.
+        colorized (bool): Whether the springs are colorized.
+    Methods:
+        update(dt, mouse_pos, mouse_pressed):
+            Updates the state of the soft body and handles destruction.
+        draw(display):
+            Draws the soft body unless destroyed.
+    """
+
+    def __init__(
+        self,
+        pos,
+        sides,
+        initial_radius,
+        pressure_force=SOFT_BODY_PRESSURE,
+        spring_force=SPRING_FORCE,
+        max_force=SPRING_MAX_FORCE,
+        desired_length=100,
+        spring_damping=SPRING_DAMPING,
+        gravity=GRAVITY,
+        draggable_points=False,
+        colorized=True,
+    ):
+        super().__init__(
+            pos,
+            sides,
+            initial_radius,
+            pressure_force,
+            spring_force,
+            desired_length,
+            spring_damping,
+            gravity,
+            draggable_points,
+        )
+
+        spring_type = ColorizedDestroyableSpring if colorized else DestroyableSpring
+
+        # Replace springs with ColorizedDestroyableSpring
+        self.springs = [
+            spring_type(self.nodes[edge[0]], self.nodes[edge[1]], edge[2], max_force, edge[3], edge[4])
+            for edge in [(i, (i + 1) % sides, spring_force, desired_length, spring_damping) for i in range(sides)]
+        ]
+        self.destroyed = False
+
+    def _update_pressure(self, dt):
+        if self.destroyed:
+            return
+        super()._update_pressure(dt)
+
+    def update(self, dt, mouse_pos, mouse_pressed):
+        # Check if any spring is broken
+        if not self.destroyed and any(spring.broken for spring in self.springs):
+            self.destroyed = True
+
+        super().update(dt, mouse_pos, mouse_pressed)
+
+    def draw(self, display):
+        super().draw(display)

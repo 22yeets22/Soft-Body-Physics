@@ -41,12 +41,15 @@ SPRING_WIDTH = 3
 # Max force a destroyable spring can handle before breaking
 SPRING_MAX_FORCE = 25
 
-
 # PRESSURIZED SOFT BODY
 SOFT_BODY_PRESSURE = 10000  # Depends on the size of the body
 
+# RENDER
 
 # COLORS
+# Background color of the simulation
+BG_COLOR = (240, 240, 240)
+
 # Color of a node when it is being dragged
 NODE_DRAGGING_COLOR = (224, 59, 47)
 
@@ -58,3 +61,10 @@ NODE_STATIC_COLOR = (50, 50, 50)
 
 # Color of the spring connecting nodes
 SPRING_COLOR = (47, 127, 224)
+
+# Colors of colorized destroyable spring
+COLOR_1 = (34, 191, 45)
+COLOR_2 = (235, 64, 52)
+
+# Debug
+DEBUG_FONT = 24
